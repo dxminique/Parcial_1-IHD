@@ -2,55 +2,39 @@
 # ============================================================
 # USER DATA — EC2 FRONTEND (Subred Pública 10.0.1.0/24)
 # Innovatech Chile — EP1 DevOps ISY1101
+# Amazon Linux 2023
 # ============================================================
 
 exec > /var/log/userdata-frontend.log 2>&1
 set -e
 
-echo ">>> [1/7] Actualizaciones de seguridad..."
-apt-get update -y
-apt-get upgrade -y
-apt-get install -y curl git unzip ca-certificates gnupg
+echo ">>> [1/6] Actualizaciones de seguridad..."
+yum update -y
 
-echo ">>> [2/7] Instalando Docker..."
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-chmod a+r /etc/apt/keyrings/docker.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-  > /etc/apt/sources.list.d/docker.list
-apt-get update -y
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+echo ">>> [2/6] Instalando Docker y Git..."
+yum install -y docker git
 systemctl enable docker
 systemctl start docker
-usermod -aG docker ubuntu
+usermod -aG docker ec2-user
 
-echo ">>> [3/7] Instalando Nginx..."
-apt-get install -y nginx
+echo ">>> [3/6] Instalando Nginx..."
+yum install -y nginx
 systemctl enable nginx
 systemctl start nginx
 
-echo ">>> [4/7] Instalando SSM Agent..."
-snap install amazon-ssm-agent --classic
-systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
-systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
-
-echo ">>> [5/7] Configurando Nginx como reverse proxy al Backend..."
-# Reemplazar IP_PRIVADA_BACKEND con la IP real de tu EC2 Backend (ej: 10.0.2.10)
+echo ">>> [4/6] Configurando Nginx como reverse proxy al Backend..."
 BACKEND_IP="10.0.2.10"
 
-cat > /etc/nginx/sites-available/default <<EOF
+cat > /etc/nginx/conf.d/innovatech.conf <<EOF
 server {
     listen 80;
     server_name _;
 
-    # Página de bienvenida Frontend
     location / {
-        root /var/www/html;
+        root /usr/share/nginx/html;
         index index.html;
     }
 
-    # Proxy al Backend (solo rutas /api)
     location /api/ {
         proxy_pass http://${BACKEND_IP}:3000/;
         proxy_set_header Host \$host;
@@ -60,8 +44,8 @@ server {
 }
 EOF
 
-echo ">>> [6/7] Creando página HTML de prueba..."
-cat > /var/www/html/index.html <<EOF
+echo ">>> [5/6] Creando página HTML de prueba..."
+cat > /usr/share/nginx/html/index.html <<EOF
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><title>Innovatech Chile - Frontend</title></head>
@@ -80,7 +64,7 @@ EOF
 
 nginx -t && systemctl reload nginx
 
-echo ">>> [7/7] Verificando instalaciones..."
+echo ">>> [6/6] Verificando instalaciones..."
 docker --version
 git --version
 nginx -v

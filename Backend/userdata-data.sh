@@ -2,44 +2,29 @@
 # ============================================================
 # USER DATA — EC2 DATA (Subred Privada 10.0.2.0/24)
 # Innovatech Chile — EP1 DevOps ISY1101
+# Amazon Linux 2023
 # ============================================================
 
 exec > /var/log/userdata-data.log 2>&1
 set -e
 
-echo ">>> [1/6] Actualizaciones de seguridad..."
-apt-get update -y
-apt-get upgrade -y
-apt-get install -y curl git ca-certificates gnupg
+echo ">>> [1/5] Actualizaciones de seguridad..."
+yum update -y
 
-echo ">>> [2/6] Instalando Docker..."
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-chmod a+r /etc/apt/keyrings/docker.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-  > /etc/apt/sources.list.d/docker.list
-apt-get update -y
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+echo ">>> [2/5] Instalando Docker y Git..."
+yum install -y docker git
 systemctl enable docker
 systemctl start docker
-usermod -aG docker ubuntu
+usermod -aG docker ec2-user
 
-echo ">>> [3/6] Instalando SSM Agent..."
-snap install amazon-ssm-agent --classic
-systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
-systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+echo ">>> [3/5] Creando volumen persistente y script de inicialización..."
+mkdir -p /home/ec2-user/mysql-data
+mkdir -p /home/ec2-user/mysql-init
 
-echo ">>> [4/6] Creando volumen persistente y script de inicialización..."
-mkdir -p /home/ubuntu/mysql-data
-mkdir -p /home/ubuntu/mysql-init
-
-cat > /home/ubuntu/mysql-init/01-init.sql <<EOF
--- Base de datos Innovatech Chile
+cat > /home/ec2-user/mysql-init/01-init.sql <<EOF
 CREATE DATABASE IF NOT EXISTS innovatech CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE innovatech;
 
--- Tabla de usuarios
 CREATE TABLE IF NOT EXISTS usuarios (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   nombre      VARCHAR(100) NOT NULL,
@@ -47,20 +32,16 @@ CREATE TABLE IF NOT EXISTS usuarios (
   creado_en   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Datos de prueba
 INSERT IGNORE INTO usuarios (nombre, email) VALUES
   ('Admin Innovatech', 'admin@innovatech.cl'),
   ('Usuario Test',     'test@innovatech.cl');
 
--- Usuario de aplicación con acceso solo a la BD innovatech
 CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY 'password123';
 GRANT ALL PRIVILEGES ON innovatech.* TO 'admin'@'%';
 FLUSH PRIVILEGES;
-
-SELECT 'Base de datos inicializada correctamente' AS status;
 EOF
 
-echo ">>> [5/6] Levantando MySQL en Docker con volumen persistente..."
+echo ">>> [4/5] Levantando MySQL en Docker con volumen persistente..."
 docker run -d \
   --name mysql-data \
   --restart always \
@@ -69,16 +50,16 @@ docker run -d \
   -e MYSQL_DATABASE=innovatech \
   -e MYSQL_USER=admin \
   -e MYSQL_PASSWORD=password123 \
-  -v /home/ubuntu/mysql-data:/var/lib/mysql \
-  -v /home/ubuntu/mysql-init:/docker-entrypoint-initdb.d \
+  -v /home/ec2-user/mysql-data:/var/lib/mysql \
+  -v /home/ec2-user/mysql-init:/docker-entrypoint-initdb.d \
   mysql:8.0
 
-echo ">>> [6/6] Esperando que MySQL inicie y verificando..."
+echo ">>> [5/5] Esperando que MySQL inicie..."
 sleep 20
 docker exec mysql-data mysql -u admin -ppassword123 innovatech \
   -e "SELECT COUNT(*) as usuarios FROM usuarios;" 2>/dev/null \
   && echo "✅ MySQL listo con datos de prueba" \
-  || echo "⚠️  MySQL aun inicializando, espera unos segundos mas"
+  || echo "⚠️  MySQL aun inicializando"
 
 docker --version
 git --version
@@ -86,5 +67,4 @@ git --version
 echo "=== DATA LISTO ==="
 echo "MySQL corriendo en puerto 3306"
 echo "Base de datos: innovatech"
-echo "Usuario app: admin / password123"
-echo "Datos en volumen: /home/ubuntu/mysql-data"
+echo "Usuario: admin / password123"

@@ -1,41 +1,32 @@
-
+#!/bin/bash
+# ============================================================
+# USER DATA — EC2 BACKEND (Subred Privada 10.0.2.0/24)
+# Innovatech Chile — EP1 DevOps ISY1101
+# Amazon Linux 2023
+# ============================================================
 
 exec > /var/log/userdata-backend.log 2>&1
 set -e
 
-echo ">>> [1/6] Actualizaciones de seguridad..."
-apt-get update -y
-apt-get upgrade -y
-apt-get install -y curl git unzip ca-certificates gnupg
+echo ">>> [1/5] Actualizaciones de seguridad..."
+yum update -y
 
-echo ">>> [2/6] Instalando Docker..."
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-chmod a+r /etc/apt/keyrings/docker.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-  > /etc/apt/sources.list.d/docker.list
-apt-get update -y
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+echo ">>> [2/5] Instalando Docker y Git..."
+yum install -y docker git
 systemctl enable docker
 systemctl start docker
-usermod -aG docker ubuntu
+usermod -aG docker ec2-user
 
-echo ">>> [3/6] Instalando SSM Agent..."
-snap install amazon-ssm-agent --classic
-systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
-systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
-
-echo ">>> [4/6] Clonando repositorio del microservicio..."
-
-REPO_URL="https://github.com/dxminique/Parcial_1-IHD.git"
-DB_HOST="10.0.2.20"    
+echo ">>> [3/5] Clonando repositorio del microservicio..."
+# REEMPLAZA con tu URL de GitHub
+REPO_URL="https://github.com/tu-usuario/backend-innovatech.git"
+DB_HOST="10.0.2.20"
 DB_PASSWORD="password123"
 
-git clone ${REPO_URL} /home/ubuntu/backend
-cd /home/ubuntu/backend
+git clone ${REPO_URL} /home/ec2-user/backend
+cd /home/ec2-user/backend
 
-echo ">>> [5/6] Construyendo y levantando contenedor Docker..."
+echo ">>> [4/5] Construyendo y levantando contenedor Docker..."
 docker build -t backend-innovatech .
 
 docker run -d \
@@ -49,7 +40,7 @@ docker run -d \
   -e DB_NAME=innovatech \
   backend-innovatech
 
-echo ">>> [6/6] Verificando servicio..."
+echo ">>> [5/5] Verificando servicio..."
 sleep 5
 curl -s http://localhost:3000/health && echo "" || echo "ADVERTENCIA: Backend aun iniciando"
 
