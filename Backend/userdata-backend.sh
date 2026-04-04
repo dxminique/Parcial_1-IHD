@@ -16,7 +16,7 @@ usermod -aG docker ec2-user
 echo ">>> [3/5] Clonando repositorio del microservicio..."
 
 REPO_URL="https://github.com/dxminique/Parcial_1-IHD.git"
-DB_HOST="10.0.2.20"
+DB_HOST="10.0.2.246"
 DB_PASSWORD="password123"
 
 git clone ${REPO_URL} /home/ec2-user/backend
