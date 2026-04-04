@@ -1,9 +1,5 @@
 #!/bin/bash
-# ============================================================
-# USER DATA — EC2 BACKEND (Subred Privada 10.0.2.0/24)
-# Innovatech Chile — EP1 DevOps ISY1101
-# Amazon Linux 2023
-# ============================================================
+
 
 exec > /var/log/userdata-backend.log 2>&1
 set -e
@@ -18,8 +14,8 @@ systemctl start docker
 usermod -aG docker ec2-user
 
 echo ">>> [3/5] Clonando repositorio del microservicio..."
-# REEMPLAZA con tu URL de GitHub
-REPO_URL="https://github.com/tu-usuario/backend-innovatech.git"
+
+REPO_URL="https://github.com/dxminique/Parcial_1-IHD.git"
 DB_HOST="10.0.2.20"
 DB_PASSWORD="password123"
 
