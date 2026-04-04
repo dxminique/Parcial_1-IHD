@@ -1,0 +1,41 @@
+name: CI/CD Pipeline - Backend Innovatech
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v3
+
+      - name: Instalar Node 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar pruebas unitarias
+        run: node test.js
+
+      - name: Construir imagen Docker
+        run: docker build -t backend-innovatech:latest .
+
+      - name: Verificar contenedor arranca correctamente
+        run: |
+          docker run -d --name backend-test \
+            -e DB_HOST=localhost \
+            -e DB_USER=admin \
+            -e DB_PASSWORD=password123 \
+            -e DB_NAME=innovatech \
+            -p 3000:3000 \
+            backend-innovatech:latest
+          sleep 3
+          curl -f http://localhost:3000/health || exit 1
+          docker stop backend-test
+          echo "✅ Contenedor validado correctamente"

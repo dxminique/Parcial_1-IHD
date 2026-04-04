@@ -1,0 +1,13 @@
+{
+  "name": "backend-innovatech",
+  "version": "1.0.0",
+  "description": "Microservicio Backend - Innovatech Chile (EP1 DevOps)",
+  "scripts": {
+    "start": "node app.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.0"
+  }
+}
