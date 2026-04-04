@@ -1,0 +1,72 @@
+# ============================================================
+# LAUNCH TEMPLATES — Innovatech Chile EP1 DevOps
+# ============================================================
+# Instrucciones:
+# 1. En AWS Console → EC2 → Launch Templates → Create launch template
+# 2. Copia el contenido de cada sección según la instancia
+# 3. En "Advanced details" → "User data" pega el script correspondiente
+# ============================================================
+
+
+# ──────────────────────────────────────────────────────────────
+# LAUNCH TEMPLATE: FRONTEND
+# ──────────────────────────────────────────────────────────────
+Nombre:             lt-innovatech-frontend
+Descripción:        Launch Template EC2 Frontend - Innovatech Chile EP1
+AMI:                Ubuntu Server 22.04 LTS (ami-0c7217cdde317cfec en us-east-1)
+Tipo de instancia:  t2.micro
+Key pair:           (selecciona tu key pair de AWS Academy)
+Subred:             subnet-publica-front (10.0.1.0/24)
+Security Group:     SG-Frontend (ver reglas abajo)
+IAM Profile:        LabInstanceProfile (requerido para SSM)
+User data:          (contenido de userdata-frontend.sh)
+
+Security Group — SG-Frontend:
+  ENTRADA:
+    HTTP   TCP 80   0.0.0.0/0      (acceso web público)
+    HTTPS  TCP 443  0.0.0.0/0      (acceso web público)
+    SSH    TCP 22   0.0.0.0/0      (acceso administrativo)
+  SALIDA:
+    Todo   Todos    0.0.0.0/0      (permite salida a internet e internet privada)
+
+
+# ──────────────────────────────────────────────────────────────
+# LAUNCH TEMPLATE: BACKEND
+# ──────────────────────────────────────────────────────────────
+Nombre:             lt-innovatech-backend
+Descripción:        Launch Template EC2 Backend - Innovatech Chile EP1
+AMI:                Ubuntu Server 22.04 LTS (ami-0c7217cdde317cfec en us-east-1)
+Tipo de instancia:  t2.micro
+Key pair:           (selecciona tu key pair de AWS Academy)
+Subred:             subnet-privada-back-data (10.0.2.0/24)
+Security Group:     SG-Backend (ver reglas abajo)
+IAM Profile:        LabInstanceProfile (requerido para SSM)
+User data:          (contenido de userdata-backend.sh)
+
+Security Group — SG-Backend:
+  ENTRADA:
+    TCP    3000   SG-Frontend   (solo el Frontend puede llamar al Backend)
+    SSH    TCP 22 SG-Frontend   (acceso SSH solo desde Frontend/bastion)
+  SALIDA:
+    Todo   Todos  0.0.0.0/0    (permite salir por NAT Gateway a internet)
+
+
+# ──────────────────────────────────────────────────────────────
+# LAUNCH TEMPLATE: DATA
+# ──────────────────────────────────────────────────────────────
+Nombre:             lt-innovatech-data
+Descripción:        Launch Template EC2 Data - Innovatech Chile EP1
+AMI:                Ubuntu Server 22.04 LTS (ami-0c7217cdde317cfec en us-east-1)
+Tipo de instancia:  t2.micro
+Key pair:           (selecciona tu key pair de AWS Academy)
+Subred:             subnet-privada-back-data (10.0.2.0/24)
+Security Group:     SG-Data (ver reglas abajo)
+IAM Profile:        LabInstanceProfile (requerido para SSM)
+User data:          (contenido de userdata-data.sh)
+
+Security Group — SG-Data:
+  ENTRADA:
+    MySQL  TCP 3306  SG-Backend   (solo el Backend puede conectar a MySQL)
+    SSH    TCP 22    SG-Frontend  (acceso SSH solo desde Frontend/bastion)
+  SALIDA:
+    Todo   Todos     0.0.0.0/0   (permite salir por NAT Gateway)
