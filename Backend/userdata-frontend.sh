@@ -23,7 +23,7 @@ systemctl enable nginx
 systemctl start nginx
 
 echo ">>> [4/6] Configurando Nginx como reverse proxy al Backend..."
-BACKEND_IP="10.0.2.179"
+BACKEND_IP="10.0.2.10"
 
 cat > /etc/nginx/conf.d/innovatech.conf <<EOF
 server {
