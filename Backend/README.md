@@ -47,7 +47,7 @@ Pegar el User Data correspondiente en cada uno.
 ### Paso 5 — Verificar conectividad
 ```bash
 # Conectarse al Frontend vía SSH o Session Manager
-ssh -i tu-key.pem ubuntu@<IP-PUBLICA-FRONTEND>
+ssh -i tu-key.pem amazon linux@<IP-PUBLICA-FRONTEND>
 
 # Descargar y ejecutar script de verificación
 curl -O https://raw.githubusercontent.com/tu-usuario/backend-innovatech/main/scripts/verificar-conectividad.sh
